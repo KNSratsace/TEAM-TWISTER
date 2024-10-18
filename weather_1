@@ -1,0 +1,131 @@
+import requests
+import urllib.parse
+import tkinter as tk
+from tkinter import messagebox
+
+# API Keys and URLs
+route_url = "https://graphhopper.com/api/1/route?"
+key = "1f2f13b4-8c78-4d72-b9e9-1963e7fdef90"
+weather_url = "https://api.openweathermap.org/data/2.5/weather?"
+weather_key = "90104da57ecd8130626e78f0b9e5a96e"
+
+# Weather Function
+def get_weather(lat, lng, weather_key):
+    url = weather_url + urllib.parse.urlencode({
+        "lat": lat,
+        "lon": lng,
+        "appid": weather_key,
+        "units": "imperial",
+        "exclude": "minutely,hourly"
+    })
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        weather_data = response.json()
+        current_temp = weather_data['main']['temp']
+        current_description = weather_data['weather'][0]['description']
+        return current_temp, current_description
+    else:
+        return None, None
+
+# Geocoding Function
+def geocoding(location, key):
+    geocode_url = "https://graphhopper.com/api/1/geocode?"
+    url = geocode_url + urllib.parse.urlencode({"q": location, "limit": "1", "key": key})
+    response = requests.get(url)
+    json_data = response.json()
+
+    if response.status_code == 200 and len(json_data["hits"]) != 0:
+        lat = json_data["hits"][0]["point"]["lat"]
+        lng = json_data["hits"][0]["point"]["lng"]
+        name = json_data["hits"][0]["name"]
+        return response.status_code, lat, lng, name
+    else:
+        return response.status_code, None, None, location
+
+# Route Function to get directions - Set to Car Only, Bike and Walking removed.
+def get_directions(orig, dest, vehicle="car"):
+    op = "&point=" + str(orig[1]) + "%2C" + str(orig[2])
+    dp = "&point=" + str(dest[1]) + "%2C" + str(dest[2])
+    paths_url = route_url + urllib.parse.urlencode({"key": key, "vehicle": vehicle}) + op + dp
+    response = requests.get(paths_url)
+    
+    if response.status_code == 200:
+        paths_data = response.json()
+        directions = []
+        for each in paths_data["paths"][0]["instructions"]:
+            path = each["text"]
+            distance = each["distance"]
+            directions.append(f"{path} ({distance/1000:.1f} km)")
+        return directions, paths_data["paths"][0]["distance"], paths_data["paths"][0]["time"]
+    else:
+        return None, None, None
+
+# Function to display weather and directions
+def show_info():
+    loc1 = entry_start.get()
+    loc2 = entry_dest.get()
+
+    # Get Geocoding data for start and destination
+    orig = geocoding(loc1, key)
+    dest = geocoding(loc2, key)
+
+    if dest[0] == 200:
+        # Get Weather at destination
+        temp, description = get_weather(dest[1], dest[2], weather_key)
+        if temp is not None and description is not None:
+            result_text.set(f"Weather at {dest[3]}: {temp}°F, {description}")
+        else:
+            result_text.set("No weather info available.")
+        
+        # Get Directions
+        directions, distance, time = get_directions(orig, dest, "car")
+        if directions:
+            miles = distance / 1000 / 1.61
+            time_in_hours = time / 1000 / 60 / 60
+            directions_text.set(f"Distance: {miles:.1f} miles, Time: {time_in_hours:.1f} hours\n" +
+                                "\n".join(directions))
+        else:
+            directions_text.set("Could not get directions.")
+    else:
+        result_text.set("Error in getting destination info.")
+
+# Tkinter - Gui Maker
+root = tk.Tk()
+root.title("Weather and Directions Finder")
+
+# boxes for start and destination - Do Not Exceed Width of 50. All Citys& States will fit in that width.
+label_start = tk.Label(root, text="Starting Location:")
+label_start.grid(row=0, column=0)
+
+entry_start = tk.Entry(root, width=30)
+entry_start.grid(row=0, column=1)
+
+label_dest = tk.Label(root, text="Destination:")
+label_dest.grid(row=1, column=0)
+
+entry_dest = tk.Entry(root, width=30)
+entry_dest.grid(row=1, column=1)
+
+# Button = weather and directions
+button_info = tk.Button(root, text="Get Info", command=show_info)
+button_info.grid(row=2, column=1)
+
+# Display the weather result
+result_text = tk.StringVar()
+label_result = tk.Label(root, textvariable=result_text, wraplength=300)
+label_result.grid(row=3, column=0, columnspan=2)
+
+# Display directions
+directions_text = tk.StringVar()
+label_directions = tk.Label(root, textvariable=directions_text, wraplength=400)
+label_directions.grid(row=4, column=0, columnspan=2)
+
+# Start the GUI loop
+root.mainloop()
+
+#GuI not resetting, after entering Dir.. Not sure if fix ATM.
+
+
+
+
