@@ -1,7 +1,7 @@
-import requests
-import urllib.parse
-import tkinter as tk
-from tkinter import messagebox
+import requests            # send HTTP data
+import urllib.parse     # Used to help break down to URL, for data segmenation and to help with GET / Post pull request. 
+import tkinter as tk    #used the make the GUI
+from tkinter import messagebox        # the message box template
 
 # API Keys and URLs
 route_url = "https://graphhopper.com/api/1/route?"
@@ -111,7 +111,7 @@ entry_dest.grid(row=1, column=1)
 button_info = tk.Button(root, text="Get Info", command=show_info)
 button_info.grid(row=2, column=1)
 
-# Display the weather result
+# Display weather result
 result_text = tk.StringVar()
 label_result = tk.Label(root, textvariable=result_text, wraplength=300)
 label_result.grid(row=3, column=0, columnspan=2)
@@ -124,7 +124,7 @@ label_directions.grid(row=4, column=0, columnspan=2)
 # Start the GUI loop
 root.mainloop()
 
-#GuI not resetting, after entering Dir.. Not sure if fix ATM.
+# After your done, you need to manually clear data from Start / End Destination points - If auto remove, it cleared out the DIR / weather report. 
 
 
 
