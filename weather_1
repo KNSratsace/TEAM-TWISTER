@@ -1,7 +1,7 @@
 import requests            # send HTTP data
-import urllib.parse     # Used to help break down to URL, for data segmenation and to help with GET / Post pull request. 
-import tkinter as tk    #used the make the GUI
-from tkinter import messagebox        # the message box template
+import urllib.parse        # Used to help break down to URL, for data segmentation and to help with GET / Post pull request.
+import tkinter as tk       # Used to make the GUI
+from tkinter import messagebox  # The message box template
 
 # API Keys and URLs
 route_url = "https://graphhopper.com/api/1/route?"
@@ -66,6 +66,10 @@ def show_info():
     loc1 = entry_start.get()
     loc2 = entry_dest.get()
 
+    # Clear the Text widgets
+    weather_text.delete(1.0, tk.END)
+    directions_text.delete(1.0, tk.END)
+
     # Get Geocoding data for start and destination
     orig = geocoding(loc1, key)
     dest = geocoding(loc2, key)
@@ -74,27 +78,30 @@ def show_info():
         # Get Weather at destination
         temp, description = get_weather(dest[1], dest[2], weather_key)
         if temp is not None and description is not None:
-            result_text.set(f"Weather at {dest[3]}: {temp}°F, {description}")
+            weather_text.insert(tk.END, f"Weather at {dest[3]}: {temp}°F, {description}")
         else:
-            result_text.set("No weather info available.")
+            weather_text.insert(tk.END, "No weather info available.")
         
         # Get Directions
         directions, distance, time = get_directions(orig, dest, "car")
         if directions:
             miles = distance / 1000 / 1.61
             time_in_hours = time / 1000 / 60 / 60
-            directions_text.set(f"Distance: {miles:.1f} miles, Time: {time_in_hours:.1f} hours\n" +
-                                "\n".join(directions))
+            directions_text.insert(
+                tk.END,
+                f"Distance: {miles:.1f} miles, Time: {time_in_hours:.1f} hours\n" +
+                "\n".join(directions)
+            )
         else:
-            directions_text.set("Could not get directions.")
+            directions_text.insert(tk.END, "Could not get directions.")
     else:
-        result_text.set("Error in getting destination info.")
+        weather_text.insert(tk.END, "Error in getting destination info.")
 
 # Tkinter - Gui Maker
 root = tk.Tk()
 root.title("Weather and Directions Finder")
 
-# boxes for start and destination - Do Not Exceed Width of 50. All Citys& States will fit in that width.
+# Boxes for start and destination - Do Not Exceed Width of 50. All Citys & States will fit in that width.
 label_start = tk.Label(root, text="Starting Location:")
 label_start.grid(row=0, column=0)
 
@@ -111,20 +118,35 @@ entry_dest.grid(row=1, column=1)
 button_info = tk.Button(root, text="Get Info", command=show_info)
 button_info.grid(row=2, column=1)
 
-# Display weather result
-result_text = tk.StringVar()
-label_result = tk.Label(root, textvariable=result_text, wraplength=300)
-label_result.grid(row=3, column=0, columnspan=2)
+# Display weather result with scrolling
+weather_frame = tk.Frame(root)
+weather_frame.grid(row=3, column=0, columnspan=2, sticky="nsew")
 
-# Display directions
-directions_text = tk.StringVar()
-label_directions = tk.Label(root, textvariable=directions_text, wraplength=400)
-label_directions.grid(row=4, column=0, columnspan=2)
+weather_scrollbar = tk.Scrollbar(weather_frame)
+weather_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+weather_text = tk.Text(weather_frame, wrap=tk.WORD, height=5, yscrollcommand=weather_scrollbar.set)
+weather_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+weather_scrollbar.config(command=weather_text.yview)
+
+# Display directions with scrolling
+directions_frame = tk.Frame(root)
+directions_frame.grid(row=4, column=0, columnspan=2, sticky="nsew")
+
+directions_scrollbar = tk.Scrollbar(directions_frame)
+directions_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+directions_text = tk.Text(directions_frame, wrap=tk.WORD, height=10, yscrollcommand=directions_scrollbar.set)
+directions_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+directions_scrollbar.config(command=directions_text.yview)
 
 # Start the GUI loop
 root.mainloop()
 
-# After your done, you need to manually clear data from Start / End Destination points - If auto remove, it cleared out the DIR / weather report. 
+# After your done, you need to manually clear data from Start / End Destination points - If auto remove, it cleared out the DIR / weather report.
+
 
 
 
